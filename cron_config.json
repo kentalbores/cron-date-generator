@@ -28,7 +28,15 @@
   "gradient_start": "#e2e8f0",
   "gradient_end": "#94a3b8",
   "gradient_angle": 135,
-  "bg_image_path": "assets/bg1.jpg",
+  "bg_image_paths": [
+    "assets/bg.jpg",
+    "assets/bg1.jpg",
+    "assets/bg2.jpg",
+    "assets/bg3.jpg",
+    "assets/bg4.jpg",
+    "assets/bg5.jpg"
+  ],
+  "bg_index": 0,
   "bg_image_scale": 1.2,
   "bg_image_fit": "cover",
   "bg_image_x": 50,

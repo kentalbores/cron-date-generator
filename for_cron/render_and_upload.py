@@ -159,6 +159,13 @@ def load_config(path: pathlib.Path) -> CronConfig:
     def opt(key: str, default: Any) -> Any:
         return raw.get(key, default)
 
+    bg_image_paths = opt("bg_image_paths", [])
+    if bg_image_paths:
+        bg_index = int(opt("bg_index", 0))
+        bg_image_path = bg_image_paths[bg_index % len(bg_image_paths)]
+    else:
+        bg_image_path = opt("bg_image_path", None)
+
     return CronConfig(
         aspect_ratio=req("aspect_ratio"),
         width_px=int(opt("width_px", 1200)),
@@ -186,7 +193,7 @@ def load_config(path: pathlib.Path) -> CronConfig:
         gradient_start=str(opt("gradient_start", "#e2e8f0")),
         gradient_end=str(opt("gradient_end", "#94a3b8")),
         gradient_angle=float(opt("gradient_angle", 135)),
-        bg_image_path=opt("bg_image_path", None),
+        bg_image_path=bg_image_path,
         bg_image_scale=float(opt("bg_image_scale", 1.0)),
         bg_image_fit=str(opt("bg_image_fit", "scale")),
         bg_image_x=float(opt("bg_image_x", 50)),
@@ -563,28 +570,24 @@ def main(argv: list[str]) -> int:
 
     repo_root = pathlib.Path(__file__).resolve().parents[1]
     config_path = (repo_root / args.config).resolve() if not os.path.isabs(args.config) else pathlib.Path(args.config)
-    config = load_config(config_path)
     date = _parse_date(args.date)
 
-    import dataclasses
+    with config_path.open("r", encoding="utf-8") as f:
+        raw_config = json.load(f)
     
-    assets_dir = repo_root / "assets"
-    if assets_dir.exists() and config.bg_type == "image":
-        valid_exts = {".jpg", ".jpeg", ".png", ".webp"}
-        images = [p for p in assets_dir.iterdir() if p.is_file() and p.suffix.lower() in valid_exts]
+    if "bg_image_paths" in raw_config and raw_config["bg_image_paths"]:
+        paths = raw_config["bg_image_paths"]
+        last_week = raw_config.get("bg_last_week")
+        current_week = date.isocalendar()[1]
         
-        def extract_num(filename: str) -> int:
-            match = re.search(r'\d+', filename)
-            return int(match.group()) if match else 0
-            
-        images.sort(key=lambda p: (extract_num(p.name), p.name))
-        
-        if images:
-            # Offset by 11 so that the current ISO week (March 2026, week 11) maps to index 0 (bg.jpg)
-            week_of_year = date.isocalendar()[1]
-            index = (week_of_year - 11) % len(images)
-            selected_img = images[index]
-            config = dataclasses.replace(config, bg_image_path=str(selected_img))
+        if last_week != current_week:
+            if last_week is not None:
+                raw_config["bg_index"] = (raw_config.get("bg_index", 0) + 1) % len(paths)
+            raw_config["bg_last_week"] = current_week
+            with config_path.open("w", encoding="utf-8") as f:
+                json.dump(raw_config, f, indent=2)
+
+    config = load_config(config_path)
 
     file_name = config.output_name_template.format(date=date.isoformat())
     out_path = pathlib.Path(args.out).resolve() if args.out else (repo_root / "out" / file_name)
