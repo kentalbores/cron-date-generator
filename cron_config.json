@@ -31,9 +31,10 @@
     "assets/bg2.jpg",
     "assets/bg3.jpg",
     "assets/bg4.jpg",
-    "assets/bg5.jpg"
+    "assets/bg5.jpg",
+    "assets/bg6.jpg"
   ],
-  "bg_index": 0,
+  "bg_index": 3,
   "bg_image_scale": 1.2,
   "bg_image_fit": "cover",
   "bg_image_x": 50,
