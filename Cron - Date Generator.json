@@ -1,0 +1,118 @@
+{
+  "name": "Cron - Date Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "create-post",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -192,
+        720
+      ],
+      "id": "f6b06bfa-c6e3-4d1f-824a-1155f1c2033a",
+      "name": "Webhook",
+      "webhookId": "919c0916-f422-4b31-bac7-ab59b180b804"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://discord.com/api/v10/channels/1480398660641620162/threads",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bot YOUR_DISCORD_TOKEN_HERE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": \"{{ $now.monthLong + \" \" + $now.day + \", \" + $now.year }}\",\n  \"message\": {\n    \"embeds\": [\n      {\n        \"title\": \"End of Day Update\",\n        \"description\": \"Detailed Logs of Daily Updates\",\n        \"image\": {\n          \"url\": \"https://drive.google.com/uc?export=view&id={{ $json.body.drive_link.split('/d/')[1].split('/')[0] }}\"\n        }\n      }\n    ]\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        64,
+        720
+      ],
+      "id": "0aa92fa6-05f4-4570-a37a-d4209089a3f3",
+      "name": "Discord Create Post"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n-pw79.onrender.com",
+            "user-agent": "python-requests/2.32.5",
+            "content-length": "193",
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "cdn-loop": "cloudflare; loops=1",
+            "cf-connecting-ip": "15.135.29.0",
+            "cf-ipcountry": "AU",
+            "cf-ray": "9d9f688ecfade7ce-SYD",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "content-type": "application/json",
+            "render-proxy-ttl": "4",
+            "rndr-id": "b0870e91-ea40-4d3a",
+            "true-client-ip": "15.135.29.0",
+            "x-forwarded-for": "15.135.29.0, 172.68.210.191",
+            "x-forwarded-proto": "https",
+            "x-request-start": "1773115185015688"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "date": "2026-03-10",
+            "environment": "development",
+            "file_name": "calendar-2026-03-10.png",
+            "drive_link": "https://drive.google.com/file/d/1cPcEGAUhb3T5vZFDOxNc6yqaQ5YB-kUG/view?usp=drivesdk"
+          },
+          "webhookUrl": "https://n8n-pw79.onrender.com/webhook-test/create-post",
+          "executionMode": "test"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Discord Create Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discord Create Post": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8509d4c3-0306-45a4-855e-ff0663b83856",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fb25db977c2ec328208f838a48b4f26a6df651b66e0bc4e8d8064fa0eb754136"
+  },
+  "id": "cuDcotSyDM60Wrr0",
+  "tags": []
+}

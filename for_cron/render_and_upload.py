@@ -12,11 +12,7 @@ from dataclasses import dataclass
 from typing import Any, Literal, Optional, Tuple
 
 import requests
-from google.auth.transport.requests import Request
-from google.oauth2 import service_account, credentials as google_credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
+from dotenv import load_dotenv
 from playwright.async_api import async_playwright
 
 
@@ -136,16 +132,10 @@ class CronConfig:
     shape_opacity: float
 
     # Upload
-    auth_mode: Literal["service_account", "oauth_user"]
-    drive_folder_id: str
-    service_account_json: str
-    oauth_client_secrets: str
-    oauth_token_json: str
     output_name_template: str
-    webhook_env: Literal["development", "production"]
-    webhook_dev_url: Optional[str]
-    webhook_prod_url: Optional[str]
-    webhook_enabled: bool
+    discord_bot_token: Optional[str]
+    discord_channel_id: Optional[str]
+    discord_upload_enabled: bool
 
 
 def load_config(path: pathlib.Path) -> CronConfig:
@@ -205,16 +195,10 @@ def load_config(path: pathlib.Path) -> CronConfig:
         vignette_intensity=float(opt("vignette_intensity", 0.3)),
         show_shapes=bool(opt("show_shapes", False)),
         shape_opacity=float(opt("shape_opacity", 0.1)),
-        auth_mode=str(opt("auth_mode", "service_account")),
-        drive_folder_id=req("drive_folder_id"),
-        service_account_json=req("service_account_json"),
-        oauth_client_secrets=str(opt("oauth_client_secrets", "secrets/oauth-client.json")),
-        oauth_token_json=str(opt("oauth_token_json", "secrets/oauth-token.json")),
         output_name_template=str(opt("output_name_template", "calendar-{date}.png")),
-        webhook_env=str(opt("webhook_env", "production")),
-        webhook_dev_url=opt("webhook_dev_url", None),
-        webhook_prod_url=opt("webhook_prod_url", None),
-        webhook_enabled=bool(opt("webhook_enabled", True)),
+        discord_bot_token=os.environ.get("DISCORD_BOT_TOKEN") or opt("discord_bot_token", None),
+        discord_channel_id=opt("discord_channel_id", None),
+        discord_upload_enabled=bool(opt("discord_upload_enabled", False)),
     )
 
 
@@ -470,94 +454,51 @@ async def render_png(config: CronConfig, date: dt.date, out_path: pathlib.Path) 
         await browser.close()
 
 
-def build_drive_service(config: CronConfig, repo_root: pathlib.Path):
-    scopes = ["https://www.googleapis.com/auth/drive.file"]
+def post_to_discord(config: CronConfig, date: dt.date, file_path: pathlib.Path, file_name: str) -> None:
+    if not config.discord_upload_enabled or not config.discord_bot_token or not config.discord_channel_id:
+        return
 
-    if config.auth_mode == "service_account":
-        sa_path = pathlib.Path(config.service_account_json).expanduser()
-        if not sa_path.is_absolute():
-            sa_path = (repo_root / sa_path).resolve()
-
-        creds = service_account.Credentials.from_service_account_file(
-            str(sa_path),
-            scopes=scopes,
-        )
-        return build("drive", "v3", credentials=creds)
-
-    # OAuth user mode
-    client_path = pathlib.Path(config.oauth_client_secrets).expanduser()
-    if not client_path.is_absolute():
-        client_path = (repo_root / client_path).resolve()
-
-    token_path = pathlib.Path(config.oauth_token_json).expanduser()
-    if not token_path.is_absolute():
-        token_path = (repo_root / token_path).resolve()
-
-    creds: Optional[google_credentials.Credentials] = None
-    if token_path.exists():
-        creds = google_credentials.Credentials.from_authorized_user_file(
-            str(token_path),
-            scopes=scopes,
-        )
-
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                str(client_path),
-                scopes=scopes,
-            )
-            creds = flow.run_local_server(port=0)
-        token_path.parent.mkdir(parents=True, exist_ok=True)
-        token_path.write_text(creds.to_json(), encoding="utf-8")
-
-    return build("drive", "v3", credentials=creds)
-
-
-def upload_to_drive(
-    *,
-    service,
-    drive_folder_id: str,
-    file_path: pathlib.Path,
-    mime_type: str = "image/png",
-    file_name: Optional[str] = None,
-) -> str:
-
-    media = MediaFileUpload(str(file_path), mimetype=mime_type, resumable=False)
-    body = {
-        "name": file_name or file_path.name,
-        "parents": [drive_folder_id],
+    url = f"https://discord.com/api/v10/channels/{config.discord_channel_id}/threads"
+    headers = {
+        "Authorization": config.discord_bot_token,
     }
-    created = service.files().create(body=body, media_body=media, fields="id,webViewLink").execute()
-    return created.get("webViewLink") or created["id"]
+    
+    thread_name = date.strftime("%B %d, %Y")
 
-
-def trigger_webhook(config: CronConfig, *, date: dt.date, file_name: str, link: str) -> None:
-    if not config.webhook_enabled:
-        return
-
-    if config.webhook_env == "development":
-        url = config.webhook_dev_url
-    else:
-        url = config.webhook_prod_url
-
-    if not url:
-        return
-
-    payload = {
-        "date": date.isoformat(),
-        "environment": config.webhook_env,
-        "file_name": file_name,
-        "drive_link": link,
+    payload_json = {
+        "name": thread_name,
+        "message": {
+            "embeds": [
+                {
+                    "title": "End of Day Update",
+                    "description": "Detailed Logs of Daily Updates",
+                    "image": {
+                        "url": f"attachment://{file_name}"
+                    }
+                }
+            ],
+            "attachments": [
+                {
+                    "id": 0,
+                    "filename": file_name
+                }
+            ]
+        }
     }
 
     try:
-        resp = requests.post(url, json=payload, timeout=10)
-        resp.raise_for_status()
+        with open(file_path, "rb") as f:
+            files = {
+                "payload_json": (None, json.dumps(payload_json), "application/json"),
+                "files[0]": (file_name, f, "image/png")
+            }
+            resp = requests.post(url, headers=headers, files=files, timeout=15)
+            resp.raise_for_status()
+            print(f"Posted to Discord: {thread_name}")
     except Exception as exc:  # noqa: BLE001
-        # Log to stdout/stderr but do not fail the whole job.
-        print(f"Webhook call to {url} failed: {exc}", file=sys.stderr)
+        print(f"Discord upload failed: {exc}", file=sys.stderr)
+        if hasattr(exc, "response") and exc.response is not None:
+            print(f"Response: {exc.response.text}", file=sys.stderr)
 
 
 def main(argv: list[str]) -> int:
@@ -569,6 +510,11 @@ def main(argv: list[str]) -> int:
     args = parser.parse_args(argv)
 
     repo_root = pathlib.Path(__file__).resolve().parents[1]
+    
+    env_path = repo_root / ".env"
+    if env_path.exists():
+        load_dotenv(env_path)
+    
     config_path = (repo_root / args.config).resolve() if not os.path.isabs(args.config) else pathlib.Path(args.config)
     date = _parse_date(args.date)
 
@@ -599,17 +545,7 @@ def main(argv: list[str]) -> int:
     if args.no_upload:
         return 0
 
-    service = build_drive_service(config, repo_root)
-    link_or_id = upload_to_drive(
-        service=service,
-        drive_folder_id=config.drive_folder_id,
-        file_path=out_path,
-        file_name=file_name,
-    )
-    print(f"Uploaded: {link_or_id}")
-
-    # Fire n8n webhook (non-fatal if it fails)
-    trigger_webhook(config, date=date, file_name=file_name, link=link_or_id)
+    post_to_discord(config, date=date, file_path=out_path, file_name=file_name)
     return 0
 
 

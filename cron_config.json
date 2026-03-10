@@ -2,7 +2,6 @@
   "aspect_ratio": "1:1",
   "width_px": 1200,
   "pixel_ratio": 2,
-
   "font_family": "Inter",
   "month_year_color": "#ffffff",
   "date_color": "#ffffff",
@@ -10,7 +9,6 @@
   "month_year_size": 3,
   "date_num_size": 4.2,
   "day_name_size": 3,
-
   "card_bg": "#1e293b",
   "card_opacity": 0.55,
   "border_radius": 40,
@@ -22,7 +20,6 @@
   "card_border_width": 0,
   "card_border_color": "#ffffff",
   "card_border_opacity": 0.0,
-
   "bg_type": "image",
   "flat_bg": "#f4f4f5",
   "gradient_start": "#e2e8f0",
@@ -43,23 +40,13 @@
   "bg_image_y": 50,
   "bg_blur_px": 18,
   "bg_brightness": 0.85,
-
   "vignette": true,
   "vignette_color": "#000000",
   "vignette_intensity": 0.25,
   "show_shapes": false,
   "shape_opacity": 0.1,
-
-  "auth_mode": "oauth_user",
-  "drive_folder_id": "19Vj_XUgBtqagIhPHqrgnEmT3F7Cz2XTg",
-  "service_account_json": "secrets/drive-service-account.json",
-  "oauth_client_secrets": "secrets/oauth-client.json",
-  "oauth_token_json": "secrets/oauth-token.json",
   "output_name_template": "calendar-{date}.png",
-
-  "webhook_env": "production",
-  "webhook_dev_url": "https://n8n-pw79.onrender.com/webhook-test/create-post",
-  "webhook_prod_url": "https://n8n-pw79.onrender.com/webhook/create-post",
-  "webhook_enabled": true
+  "discord_channel_id": "1480398660641620162",
+  "discord_upload_enabled": true,
+  "bg_last_week": 11
 }
-
