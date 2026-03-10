@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import Any, Literal, Optional, Tuple
 
 import requests
+from google.auth.transport.requests import Request
 from google.oauth2 import service_account, credentials as google_credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
@@ -484,7 +485,7 @@ def build_drive_service(config: CronConfig, repo_root: pathlib.Path):
 
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())  # type: ignore[name-defined]
+            creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
                 str(client_path),
