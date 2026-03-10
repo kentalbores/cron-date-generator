@@ -65,6 +65,14 @@ def _hex_to_rgba(hex_color: str, opacity: float) -> str:
     return f"rgba({r}, {g}, {b}, {opacity})"
 
 
+def _bg_size_css(config: "CronConfig") -> str:
+    if config.bg_image_fit == "cover":
+        return "cover"
+    if config.bg_image_fit == "contain":
+        return "contain"
+    return f"{config.bg_image_scale * 100}%"
+
+
 def _file_to_data_url(path: pathlib.Path) -> str:
     mime, _ = mimetypes.guess_type(str(path))
     if not mime:
@@ -114,6 +122,7 @@ class CronConfig:
     gradient_angle: float
     bg_image_path: Optional[str]
     bg_image_scale: float
+    bg_image_fit: Literal["cover", "contain", "scale"]
     bg_image_x: float
     bg_image_y: float
     bg_blur_px: float
@@ -179,6 +188,7 @@ def load_config(path: pathlib.Path) -> CronConfig:
         gradient_angle=float(opt("gradient_angle", 135)),
         bg_image_path=opt("bg_image_path", None),
         bg_image_scale=float(opt("bg_image_scale", 1.0)),
+        bg_image_fit=str(opt("bg_image_fit", "scale")),
         bg_image_x=float(opt("bg_image_x", 50)),
         bg_image_y=float(opt("bg_image_y", 50)),
         bg_blur_px=float(opt("bg_blur_px", 0)),
@@ -282,7 +292,7 @@ def build_html(config: CronConfig, date: dt.date) -> str:
       .bg-image {{
         display: {bg_image_display};
         background-image: url("{bg_image_url}");
-        background-size: {config.bg_image_scale * 100}%;
+        background-size: {_bg_size_css(config)};
         background-position: {config.bg_image_x}% {config.bg_image_y}%;
         background-repeat: no-repeat;
         filter: {bg_filter if bg_filter else "none"};
