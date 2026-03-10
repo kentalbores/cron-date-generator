@@ -459,8 +459,12 @@ def post_to_discord(config: CronConfig, date: dt.date, file_path: pathlib.Path, 
         return
 
     url = f"https://discord.com/api/v10/channels/{config.discord_channel_id}/threads"
+    token = config.discord_bot_token
+    if not token.startswith("Bot "):
+        token = f"Bot {token}"
+
     headers = {
-        "Authorization": config.discord_bot_token,
+        "Authorization": token,
     }
     
     thread_name = date.strftime("%B %d, %Y")
