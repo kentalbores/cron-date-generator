@@ -1,0 +1,51 @@
+{
+  "aspect_ratio": "1:1",
+  "width_px": 1200,
+  "pixel_ratio": 2,
+
+  "font_family": "Inter",
+  "month_year_color": "#18181b",
+  "date_color": "#18181b",
+  "day_color": "#71717a",
+  "month_year_size": 1.0,
+  "date_num_size": 1.0,
+  "day_name_size": 1.0,
+
+  "card_bg": "#ffffff",
+  "card_opacity": 1.0,
+  "border_radius": 24,
+  "shadow_intensity": 0.1,
+  "card_padding": 40,
+  "card_gap": 32,
+  "card_width_pct": 75,
+  "card_height_pct": 75,
+  "card_border_width": 1,
+  "card_border_color": "#ffffff",
+  "card_border_opacity": 0.2,
+
+  "bg_type": "flat",
+  "flat_bg": "#f4f4f5",
+  "gradient_start": "#e2e8f0",
+  "gradient_end": "#94a3b8",
+  "gradient_angle": 135,
+  "bg_image_path": null,
+  "bg_image_scale": 1.0,
+  "bg_image_x": 50,
+  "bg_image_y": 50,
+  "bg_blur_px": 0,
+  "bg_brightness": 1.0,
+
+  "vignette": false,
+  "vignette_color": "#000000",
+  "vignette_intensity": 0.3,
+  "show_shapes": false,
+  "shape_opacity": 0.1,
+
+  "auth_mode": "oauth_user",
+  "drive_folder_id": "19Vj_XUgBtqagIhPHqrgnEmT3F7Cz2XTg",
+  "service_account_json": "secrets/drive-service-account.json",
+  "oauth_client_secrets": "secrets/oauth-client.json",
+  "oauth_token_json": "secrets/oauth-token.json",
+  "output_name_template": "calendar-{date}.png"
+}
+
