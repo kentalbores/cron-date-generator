@@ -566,6 +566,26 @@ def main(argv: list[str]) -> int:
     config = load_config(config_path)
     date = _parse_date(args.date)
 
+    import dataclasses
+    
+    assets_dir = repo_root / "assets"
+    if assets_dir.exists() and config.bg_type == "image":
+        valid_exts = {".jpg", ".jpeg", ".png", ".webp"}
+        images = [p for p in assets_dir.iterdir() if p.is_file() and p.suffix.lower() in valid_exts]
+        
+        def extract_num(filename: str) -> int:
+            match = re.search(r'\d+', filename)
+            return int(match.group()) if match else 0
+            
+        images.sort(key=lambda p: (extract_num(p.name), p.name))
+        
+        if images:
+            # Offset by 11 so that the current ISO week (March 2026, week 11) maps to index 0 (bg.jpg)
+            week_of_year = date.isocalendar()[1]
+            index = (week_of_year - 11) % len(images)
+            selected_img = images[index]
+            config = dataclasses.replace(config, bg_image_path=str(selected_img))
+
     file_name = config.output_name_template.format(date=date.isoformat())
     out_path = pathlib.Path(args.out).resolve() if args.out else (repo_root / "out" / file_name)
     out_path.parent.mkdir(parents=True, exist_ok=True)
