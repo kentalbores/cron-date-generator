@@ -46,6 +46,11 @@
   "service_account_json": "secrets/drive-service-account.json",
   "oauth_client_secrets": "secrets/oauth-client.json",
   "oauth_token_json": "secrets/oauth-token.json",
-  "output_name_template": "calendar-{date}.png"
+  "output_name_template": "calendar-{date}.png",
+
+  "webhook_env": "production",
+  "webhook_dev_url": "https://n8n-pw79.onrender.com/webhook-test/create-post",
+  "webhook_prod_url": "https://n8n-pw79.onrender.com/webhook/create-post",
+  "webhook_enabled": true
 }
 

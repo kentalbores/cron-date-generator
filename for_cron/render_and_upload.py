@@ -11,6 +11,7 @@ import sys
 from dataclasses import dataclass
 from typing import Any, Literal, Optional, Tuple
 
+import requests
 from google.oauth2 import service_account, credentials as google_credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
@@ -131,6 +132,10 @@ class CronConfig:
     oauth_client_secrets: str
     oauth_token_json: str
     output_name_template: str
+    webhook_env: Literal["development", "production"]
+    webhook_dev_url: Optional[str]
+    webhook_prod_url: Optional[str]
+    webhook_enabled: bool
 
 
 def load_config(path: pathlib.Path) -> CronConfig:
@@ -188,6 +193,10 @@ def load_config(path: pathlib.Path) -> CronConfig:
         oauth_client_secrets=str(opt("oauth_client_secrets", "secrets/oauth-client.json")),
         oauth_token_json=str(opt("oauth_token_json", "secrets/oauth-token.json")),
         output_name_template=str(opt("output_name_template", "calendar-{date}.png")),
+        webhook_env=str(opt("webhook_env", "production")),
+        webhook_dev_url=opt("webhook_dev_url", None),
+        webhook_prod_url=opt("webhook_prod_url", None),
+        webhook_enabled=bool(opt("webhook_enabled", True)),
     )
 
 
@@ -506,6 +515,33 @@ def upload_to_drive(
     return created.get("webViewLink") or created["id"]
 
 
+def trigger_webhook(config: CronConfig, *, date: dt.date, file_name: str, link: str) -> None:
+    if not config.webhook_enabled:
+        return
+
+    if config.webhook_env == "development":
+        url = config.webhook_dev_url
+    else:
+        url = config.webhook_prod_url
+
+    if not url:
+        return
+
+    payload = {
+        "date": date.isoformat(),
+        "environment": config.webhook_env,
+        "file_name": file_name,
+        "drive_link": link,
+    }
+
+    try:
+        resp = requests.post(url, json=payload, timeout=10)
+        resp.raise_for_status()
+    except Exception as exc:  # noqa: BLE001
+        # Log to stdout/stderr but do not fail the whole job.
+        print(f"Webhook call to {url} failed: {exc}", file=sys.stderr)
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="Render flip calendar PNG and upload to Google Drive.")
     parser.add_argument("--config", default="cron_config.json", help="Path to config JSON in repo root.")
@@ -537,6 +573,9 @@ def main(argv: list[str]) -> int:
         file_name=file_name,
     )
     print(f"Uploaded: {link_or_id}")
+
+    # Fire n8n webhook (non-fatal if it fails)
+    trigger_webhook(config, date=date, file_name=file_name, link=link_or_id)
     return 0
 
 
