@@ -8,6 +8,7 @@ import os
 import pathlib
 import re
 import sys
+import zoneinfo
 from dataclasses import dataclass
 from typing import Any, Literal, Optional, Tuple
 
@@ -30,6 +31,13 @@ NOISE_SVG_DATA_URL = (
 
 def _parse_date(date_str: Optional[str]) -> dt.date:
     if not date_str:
+        tz_name = os.environ.get("TZ") or os.environ.get("CRON_TZ")
+        if tz_name:
+            try:
+                tz = zoneinfo.ZoneInfo(tz_name)
+                return dt.datetime.now(tz).date()
+            except Exception:
+                pass
         return dt.date.today()
     return dt.date.fromisoformat(date_str)
 
