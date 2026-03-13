@@ -9,10 +9,12 @@ import pathlib
 import re
 import sys
 import zoneinfo
+import dataclasses
 from dataclasses import dataclass
 from typing import Any, Literal, Optional, Tuple
 
 import requests
+from colorthief import ColorThief
 from dotenv import load_dotenv
 from playwright.async_api import async_playwright
 
@@ -546,6 +548,20 @@ def main(argv: list[str]) -> int:
                 json.dump(raw_config, f, indent=2)
 
     config = load_config(config_path)
+
+    if config.bg_type == "image" and config.bg_image_path:
+        img_path = pathlib.Path(config.bg_image_path).expanduser()
+        if not img_path.is_absolute():
+            img_path = (repo_root / img_path).resolve()
+        
+        if img_path.exists():
+            try:
+                color_thief = ColorThief(str(img_path))
+                dominant_color = color_thief.get_color(quality=1)
+                hex_color = "#{:02x}{:02x}{:02x}".format(*dominant_color)
+                config = dataclasses.replace(config, card_bg=hex_color)
+            except Exception as e:
+                print(f"Failed to extract dominant color from {img_path}: {e}", file=sys.stderr)
 
     file_name = config.output_name_template.format(date=date.isoformat())
     out_path = pathlib.Path(args.out).resolve() if args.out else (repo_root / "out" / file_name)
